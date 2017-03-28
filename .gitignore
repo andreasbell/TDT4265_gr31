@@ -216,6 +216,7 @@ pip-log.txt
 .mr.developer.cfg
 
 #################
-##Google Drive
+##Other things
 #################
 desktop.ini
+weights/
