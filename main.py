@@ -1,8 +1,10 @@
 from DLClassifier import DLClassifier
+from CVClassifier import CVClassifier
 import numpy as np
 import cv2
 
-det = DLClassifier("weights/detector.ckpt")
+#det = DLClassifier("weights/detector.ckpt")
+det = CVClassifier()
 
 np.set_printoptions(precision=1, suppress=True)
 
@@ -19,7 +21,8 @@ while(True):
     print(str(det.result) + " "*20, sep=' ', end='\r', flush=True)
 
     # Display the resulting frame
-    cv2.imshow('frame: ',frame)
+    #cv2.imshow('frame: ',frame)
+    cv2.imshow('frame: ',det.image)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
