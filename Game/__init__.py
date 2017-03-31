@@ -1,8 +1,3 @@
-
-# coding: utf-8
-
-# In[61]:
-
 import tkinter as tk
 from PIL import Image
 from PIL import ImageTk
@@ -84,9 +79,10 @@ class RPS_Game():
         print(self.opts)
         print(self.username)
         
-    
-app = RPS_Game()
-app.run()
+if __name__ == "__main__":
+#    app = RPS_Game()
+#    app.run()
+    pass
 
 
 
