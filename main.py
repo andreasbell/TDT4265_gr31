@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 
 #det = DLClassifier("weights/detector.ckpt")
-det = CVClassifier()
+det = CVClassifier(False)
 
 np.set_printoptions(precision=1, suppress=True)
 

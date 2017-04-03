@@ -66,9 +66,9 @@ class CVClassifier:
         if self.count_defects < 2:
             self.result = 0
         elif self.count_defects < 4:
-            self.result = 1
-        else:
             self.result = 2
+        else:
+            self.result = 1
         return self.result
 
 if __name__ == "__main__":

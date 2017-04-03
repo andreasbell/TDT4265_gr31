@@ -1,13 +1,19 @@
 import tkinter as tk
 from PIL import Image
 from PIL import ImageTk
+from scipy import signal
+import numpy as np
+import time
+import random
 import cv2
 
 class RPS_Game():
     def __init__(self):
+        # GUI variabels
         self.opts = ["",""]
         self.username = ""
-        self.initMainMenu()  
+        self.initMainMenu()
+        # GAME Countdown variabels
         
     def btnPress(self, press):
         print(press)
@@ -72,6 +78,33 @@ class RPS_Game():
         btn_classic.pack(side=tk.RIGHT)
         btn_play.pack()
         
+    def selectHand(self, hand, difficulty = 1):
+        if difficulty == 0:
+            #return loosing hand
+            return (hand + 2)%3
+        elif difficulty == 1:
+            #return random hand
+            return random.randint(0, 2)
+        elif difficulty == 2:
+            #return wining hand
+            return (hand + 1)%2
+    
+    def countDown(self, hand_position = None, start = False):
+        if start == True: # Start the count down
+            self.start_time = int(round(time.time() * 1000)) #Time in ms
+            self.hand_time = []
+            self.hand_pos = []
+        
+        # Use timer if no hand position is given
+        if hand_position == None:
+            return (int(round(time.time() * 1000)) - self.start_time)//1000 #return seconds since start
+        else:
+            self.hand_pos.append(hand_position)
+            self.hand_time.append((int(round(time.time() * 1000)) - self.start_time)/1000 + 1)
+            return signal.find_peaks_cwt(np.array(self.hand_pos), np.array(self.hand_time))
+            
+            
+        
     def run(self):
         self.window.mainloop()
 
@@ -79,9 +112,10 @@ class RPS_Game():
         print(self.opts)
         print(self.username)
         
+        
 if __name__ == "__main__":
-#    app = RPS_Game()
-#    app.run()
+    app = RPS_Game()
+    app.run()
     pass
 
 
