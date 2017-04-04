@@ -109,11 +109,12 @@ class DLClassifier:
     
     def detect_from_cvmat(self,img):
         #Resize image and turn into RGB numpy array
+        self.image = img
         img_resized_np = np.asarray(cv2.cvtColor(cv2.resize(img, (448, 448)),cv2.COLOR_BGR2RGB))
         inputs = np.zeros((1,448,448,3),dtype='float32')
         inputs[0] = (img_resized_np/255.0)*2.0-1.0
         net_output = self.sess.run(self.sm_20, feed_dict={self.x: inputs, self.keep_prob: 1.0})
-        self.result = net_output[0]
+        self.result = np.argmax(net_output[0])
         return self.result
     
     def train_network(self, path):
