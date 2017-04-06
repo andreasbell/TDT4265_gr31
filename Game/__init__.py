@@ -137,7 +137,7 @@ class RPS_Game():
         
     def display(self, frame, countdown, hand_c = None, hand_p = None, result = "Draw"):
         img2 = cv2.resize(frame,(448, 448))
-        hands = ["Rock", "Paper", "Scissor"]
+        hands = ["Rock", "Paper", "Scissor", "Okay"]
         
         if(hand_c is not None):
             #display hand
@@ -180,10 +180,12 @@ class RPS_Game():
         
         if(self.opts[1] == "Neural"):
             det = DLClassifier("weights/detector.ckpt")
-        else:
+        elif self.opts[1] == "Classic":
             det = CVClassifier(invert = False)
-            
-        tracker = CVTracker()
+        if self.opts[0] == "Tracking":
+            tracker = CVClassifier(invert = False)
+        else:
+            tracker = CVTracker()
 
         cap = cv2.VideoCapture(0)
         
@@ -201,8 +203,8 @@ class RPS_Game():
                 tracker.HSV_tracker(frame)
                 y = tracker.y
             elif(self.opts[0] == "Tracking"):
-                det.detect_from_cvmat(frame)
-                y = det.y
+                tracker.detect_from_cvmat(frame)
+                y = tracker.y
             else:
                 y = None
                 
@@ -211,13 +213,13 @@ class RPS_Game():
             
             if(count >= 3):
                 start_time = int(round(time.time() * 1000))
-                while(int(round(time.time() * 1000)) - start_time < 300):
+                while(int(round(time.time() * 1000)) - start_time < 500):
                     ret, frame = cap.read()
                     self.display(frame,count)
                     if cv2.waitKey(1) & 0xFF == 27: break
                 
                 det.detect_from_cvmat(frame)
-                oponent = self.selectHand(det.result,difficulty)
+                oponent = self.selectHand(det.result, difficulty)
                 if(det.result == oponent):
                     #Draw
                     self.draws +=1
@@ -239,9 +241,31 @@ class RPS_Game():
             else:
                 #Display countdown
                 self.display(frame,count)
-                
-            if cv2.waitKey(1) & 0xFF == 27: break
-                
+            
+            k = cv2.waitKey(1) & 0xFF    
+            if k == 27: break
+            if k == ord("c"):
+                if self.opts[0] == "Motion":
+                    tracker.AD_calibrate()
+                    while True:
+                        ret, frame = cap.read()
+                        tracker.AD_tracker(frame)
+                        self.display(frame, count)
+                        #cv2.imshow("thresh", tracker.thresh)
+                        #cv2.imshow("fdiff", tracker.frame_diff)
+                        k = cv2.waitKey(1) & 0xFF  
+                        if k == ord("c") or k == 27: break
+                    tracker.AD_calibrate()
+                    
+                if self.opts[0] == "HSV":
+                    tracker.HSV_calibrate()
+                    while True:
+                        tracker.HSV_tracker(frame)
+                        self.display(cv2.cvtColor(tracker.thresh,cv2.COLOR_GRAY2BGR), count)
+                        k = cv2.waitKey(1) & 0xFF  
+                        if k == ord("c") or k == 27: break
+                    tracker.HSV_calibrate()
+
         cap.release()
         cv2.destroyAllWindows()
         

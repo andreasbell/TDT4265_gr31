@@ -11,6 +11,7 @@ class CVTracker():
         self.absdiff_blur = 40     #Size of blurring kernel
         self.absdiff_thresh_1 = 30 #Threshold value before blurring
         self.absdiff_thresh_2 = 30 #Threshold value after blurring
+        self.erode = 11
         self.calibrating = False
         self.y = 0
 
@@ -20,12 +21,12 @@ class CVTracker():
         if len(contours) > 0: objectDetected = True
 
         if objectDetected:
-            hull = cv2.convexHull(contours[-1])
+            largest = max(contours, key = lambda x: cv2.contourArea(x))
 
-            largest = contours[-1]
+            hull = cv2.convexHull(largest)
             #x,y,w,h = cv2.boundingRect(largest)
             #cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
-            rect = cv2.minAreaRect(hull)
+            rect = cv2.minAreaRect(largest)
             self.y = rect[0][1]
             box = cv2.boxPoints(rect)
             box = np.int0(box)
@@ -36,22 +37,31 @@ class CVTracker():
         if type(self.prevFrame) == type(None):
             self.prevFrame = frame
             print("test")
-      
         gray1 = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY )
         gray2 = cv2.cvtColor(self.prevFrame, cv2.COLOR_BGR2GRAY )
 
         #Get difference of the two consecutive frames and threshold
         frame_diff = cv2.absdiff(gray2,gray1)
-
+        
+        cv2.imshow("fdiff",frame_diff)
+        #self.frame_diff = frame_diff.copy()
+        
         ret, thresh = cv2.threshold(frame_diff, self.absdiff_thresh_1, 255, cv2.THRESH_BINARY)
-
+        erode_el = cv2.getStructuringElement(cv2.MORPH_RECT,(self.erode, self.erode))
+        thresh = cv2.erode(thresh, erode_el)
+        
+        cv2.imshow("thresh", thresh)
+        #self.thresh = thresh.copy()
+        
         #Blur the thresholded image and re-threshold
         thresh = cv2.blur(thresh,(self.absdiff_blur, self.absdiff_blur))
         ret, thresh = cv2.threshold(thresh, self.absdiff_thresh_2, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
         
+        cv2.imshow("blur", thresh)
+        
         #Keep the previous frame for next loop.
         self.prevFrame = frame.copy()
-        self.thresh = thresh.copy()
+        #self.thresh = thresh.copy()
         
         
         #Find bounding box
@@ -103,6 +113,8 @@ class CVTracker():
             cv2.createTrackbar("Thresh_1", "AD_calibrate", self.absdiff_thresh_1, 100, self.AD_slider_change)
             cv2.createTrackbar("Thresh_2", "AD_calibrate", self.absdiff_thresh_1, 100, self.AD_slider_change)
             cv2.createTrackbar("Blur",     "AD_calibrate", self.absdiff_blur,     100, self.AD_slider_change)
+            cv2.createTrackbar("Erode",    "AD_calibrate", self.erode,            100, self.AD_slider_change)
+
             self.calibrating = True
         elif self.calibrating:
             cv2.destroyWindow("AD_calibrate")
@@ -124,7 +136,9 @@ class CVTracker():
         self.absdiff_thresh_1 = cv2.getTrackbarPos("Thresh_1", "AD_calibrate")
         self.absdiff_thresh_2 = cv2.getTrackbarPos("Thresh_2", "AD_calibrate")
         self.absdiff_blur     = cv2.getTrackbarPos("Blur",     "AD_calibrate") + 1
+        self.erode            = cv2.getTrackbarPos("Erode",     "AD_calibrate") + 1
 
+        
 
 
 
