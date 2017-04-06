@@ -97,9 +97,9 @@ class RPS_Game():
             #return random hand
             return random.randint(0, 2)
         elif difficulty == 2:
-            if self.losses > 3:
+            if self.wins > 3:
                 return (hand + 1)%3
-            #return wining hand
+                #return wining hand
             else:
                 return random.randint(0, 2)
     
