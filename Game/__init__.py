@@ -9,6 +9,7 @@ import cv2
 
 from DLClassifier import DLClassifier
 from CVClassifier import CVClassifier
+from CVTracker import CVTracker
 
 class RPS_Game():
     def __init__(self):
@@ -18,8 +19,8 @@ class RPS_Game():
         self.initMainMenu()      
         # GAME Countdown variabels
         
-        self.difficultNames = ["Torstein", "SlickT", "Slick-T","Slick T", "Skorstein", "Bart", "Chilly cheese"]
-        self.easyNames = ["Frank","Vipul"]
+        self.difficultNames = ["torstein", "slickt", "slick-t", "slick t", "slick_t", "skorstein", "bart", "chilly cheese", "kjetil"]
+        self.easyNames = ["frank","vipul"]
         
         self.wins = 0;
         self.losses = 0;
@@ -38,7 +39,7 @@ class RPS_Game():
         elif press == "Classic":
             self.opts[1] = "Classic"
         elif press == "Play":
-            self.username = self.entUsername.get()
+            self.username = self.entUsername.get().strip()
             if self.username == "":
                 print("Enter username!")
             elif self.opts[0] == "" or self.opts[1] == "":
@@ -96,8 +97,11 @@ class RPS_Game():
             #return random hand
             return random.randint(0, 2)
         elif difficulty == 2:
+            if self.losses > 3:
+                return (hand + 1)%3
             #return wining hand
-            return (hand + 1)%2
+            else:
+                return random.randint(0, 2)
     
     def countDown(self, hand_position = None, start = False):
         if start == True: # Start the count down
@@ -109,19 +113,21 @@ class RPS_Game():
         if hand_position == None:
             return (int(round(time.time() * 1000)) - self.start_time)//1000 #return seconds since start
         else:
-            if int(round(time.time() * 1000)) - self.start_time > 3000:
-                self.start_time = int(round(time.time() * 1000)) #Time in ms
-                self.hand_time = int(round(time.time() * 1000))
-                self.hand_pos = []
-                
             current_time = int(round(time.time() * 1000))
+            if current_time - self.start_time > 2000:
+                self.start_time = current_time #Time in ms
+                self.hand_time = current_time
+                self.hand_pos = []
+            
             if current_time - self.hand_time > 100:
                 self.hand_pos.append(hand_position)
                 self.hand_time = current_time
-            maxtab, mintab = peakdetect.peakdet(self.hand_pos,100)
-            if(mintab > 0):
-                self.start_time = int(round(time.time() * 1000)) #Time in ms
-                self.hand_time = int(round(time.time() * 1000))
+            
+            maxtab, mintab = peakdetect.peakdet(self.hand_pos,50)
+            
+            if(len(mintab) == 0):
+                self.start_time = int(round(time.time() * 1000)) #Time in m
+                
             return len(mintab)
             
             
@@ -129,23 +135,31 @@ class RPS_Game():
     def run(self):
         self.window.mainloop()
         
-    def display(self, frame, countdown, hand = None, result = "Draw"):
-        if(hand is not None):
+    def display(self, frame, countdown, hand_c = None, hand_p = None, result = "Draw"):
+        img2 = cv2.resize(frame,(448, 448))
+        hands = ["Rock", "Paper", "Scissor"]
+        
+        if(hand_c is not None):
             #display hand
             img = cv2.imread('rps.png')
             size = np.shape(img)[1]
-            img1 = cv2.resize(img[:, hand*size//3:(hand+1)*size//3],(448, 448))
-            cv2.putText(img1,result, (3,3), cv2.FONT_HERSHEY_SIMPLEX, 2, 255)
+            img1 = cv2.resize(img[:, hand_c*size//3:(hand_c+1)*size//3],(448, 448))
+            cv2.putText(img2, hands[hand_p], (50,400), cv2.FONT_HERSHEY_SIMPLEX, 2, (0,255,0), 4)
+            
         else:
             #display countdown
+            countdown = min(countdown, 2)
             countdown_images = ['images/img3.jpg', 'images/img2.jpg', 'images/img1.png']
             img = cv2.imread(countdown_images[countdown])
             img1 = cv2.resize(img,(448, 448))
             
-        img2 = cv2.resize(frame,(448, 448))
+        
         #vis = np.zeros((max(h1, h2), w1+w2), np.uint8)
         #vis[:h1, :w1] = frame 
         #vis[:h2, w1:w1+w2] = res
+        
+        cv2.putText(img1,"Computer: " + str(self.losses), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0,255,0), 4)
+        cv2.putText(img2, self.username + ": " + str(self.wins), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0,255,0), 4)
         
         vis = np.concatenate((img1, img2), axis=1)
         cv2.imshow('frame: ',vis)
@@ -159,16 +173,17 @@ class RPS_Game():
         self.draws = 0;
         
         difficulty = 1
-        if(self.username in self.difficultNames):
-            difficult = 2
-        elif(self.username in self.easyNames):
+        if(self.username.lower() in self.difficultNames):
+            difficulty = 2
+        elif(self.username.lower() in self.easyNames):
             difficulty = 0
         
         if(self.opts[1] == "Neural"):
             det = DLClassifier("weights/detector.ckpt")
         else:
             det = CVClassifier(invert = False)
-         
+            
+        tracker = CVTracker()
 
         cap = cv2.VideoCapture(0)
         
@@ -177,10 +192,30 @@ class RPS_Game():
         
         while(True):
             #må putte inn y i countDown
-            count = self.countDown()
             ret, frame = cap.read()
             
+            if(self.opts[0] == "Motion"):
+                tracker.AD_tracker(frame)
+                y = tracker.y
+            elif(self.opts[0] == "HSV"):
+                tracker.HSV_tracker(frame)
+                y = tracker.y
+            elif(self.opts[0] == "Tracking"):
+                det.detect_from_cvmat(frame)
+                y = det.y
+            else:
+                y = None
+                
+            count = self.countDown(hand_position = y)
+                
+            
             if(count >= 3):
+                start_time = int(round(time.time() * 1000))
+                while(int(round(time.time() * 1000)) - start_time < 300):
+                    ret, frame = cap.read()
+                    self.display(frame,count)
+                    if cv2.waitKey(1) & 0xFF == 27: break
+                
                 det.detect_from_cvmat(frame)
                 oponent = self.selectHand(det.result,difficulty)
                 if(det.result == oponent):
@@ -192,16 +227,20 @@ class RPS_Game():
                     self.wins += 1
                     result = "Win" 
                 else:
-                    #loose
+                    #lose
                     self.losses += 1
-                    result = "Loose"
-                self.display(det.image,count,oponent,result)
+                    result = "Lose"
+                    
+                start_time = int(round(time.time() * 1000))
+                while(int(round(time.time() * 1000)) - start_time < 2500):
+                    self.display(det.image,count,oponent, det.result, result)
+                    if cv2.waitKey(1) & 0xFF == 27: break
+                self.countDown(start=True)
             else:
                 #Display countdown
                 self.display(frame,count)
                 
-            if cv2.waitKey(1) & 0xFF == 27:
-                break
+            if cv2.waitKey(1) & 0xFF == 27: break
                 
         cap.release()
         cv2.destroyAllWindows()
