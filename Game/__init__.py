@@ -9,6 +9,7 @@ import cv2
 
 from DLClassifier import DLClassifier
 from CVClassifier import CVClassifier
+from DLTracker import DLTracker
 from CVTracker import CVTracker
 
 class RPS_Game():
@@ -179,7 +180,8 @@ class RPS_Game():
             difficulty = 0
         
         if(self.opts[1] == "Neural"):
-            det = DLClassifier("weights/detector.ckpt")
+            #det = DLClassifier("weights/detector.ckpt")
+            det = DLTracker(weights = 'weights/YOLO_tiny.ckpt')
         elif self.opts[1] == "Classic":
             det = CVClassifier(invert = False)
         if self.opts[0] == "Tracking":
@@ -219,25 +221,26 @@ class RPS_Game():
                     if cv2.waitKey(1) & 0xFF == 27: break
                 
                 det.detect_from_cvmat(frame)
-                oponent = self.selectHand(det.result, difficulty)
-                if(det.result == oponent):
-                    #Draw
-                    self.draws +=1
-                    result ="Draw"
-                elif((det.result + 2)%3 == oponent):
-                    #Won
-                    self.wins += 1
-                    result = "Win" 
-                else:
-                    #lose
-                    self.losses += 1
-                    result = "Lose"
-                    
-                start_time = int(round(time.time() * 1000))
-                while(int(round(time.time() * 1000)) - start_time < 2500):
-                    self.display(det.image,count,oponent, det.result, result)
-                    if cv2.waitKey(1) & 0xFF == 27: break
-                self.countDown(start=True)
+                if(det.result != None):
+                    oponent = self.selectHand(det.result, difficulty)
+                    if(det.result == oponent):
+                        #Draw
+                        self.draws +=1
+                        result ="Draw"
+                    elif((det.result + 2)%3 == oponent):
+                        #Won
+                        self.wins += 1
+                        result = "Win" 
+                    else:
+                        #lose
+                        self.losses += 1
+                        result = "Lose"
+                        
+                    start_time = int(round(time.time() * 1000))
+                    while(int(round(time.time() * 1000)) - start_time < 2500):
+                        self.display(det.image,count,oponent, det.result, result)
+                        if cv2.waitKey(1) & 0xFF == 27: break
+                    self.countDown(start=True)
             else:
                 #Display countdown
                 self.display(frame,count)
@@ -276,7 +279,6 @@ class RPS_Game():
 if __name__ == "__main__":
     app = RPS_Game()
     app.run()
-    pass
 
 
 
