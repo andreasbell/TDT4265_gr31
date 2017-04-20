@@ -64,11 +64,14 @@ class CVTracker():
         #self.thresh = thresh.copy()
         
         #Find bounding box
-        self.movementSearch(thresh, frame)
+        if not self.calibrating:
+            self.movementSearch(thresh, frame)
         
         
     def HSV_tracker(self, frame):
         HSV = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        self.image = frame.copy()
+        thresh = 0
         
         #Threshold for skin color
         thresh = cv2.inRange(HSV, self.lower_range, self.upper_range)
@@ -88,8 +91,9 @@ class CVTracker():
         thresh = cv2.blur(thresh,(40,40))
         ret,thresh = cv2.threshold(thresh,30,255,cv2.THRESH_BINARY)    
         self.thresh = thresh.copy()
-
-        self.movementSearch(thresh,frame)
+        
+        if not self.calibrating:
+            self.movementSearch(thresh,frame)
 
         
     def HSV_calibrate(self):
@@ -97,8 +101,8 @@ class CVTracker():
             cv2.namedWindow("HSV_calibrate")
             cv2.createTrackbar("Hmin","HSV_calibrate", self.lower_range[0], 180, self.HSV_slider_change)
             cv2.createTrackbar("Hmax","HSV_calibrate", self.upper_range[0], 180, self.HSV_slider_change)
-            cv2.createTrackbar("Smin","HSV_calibrate", self.lower_range[1], 256,   self.HSV_slider_change)
-            cv2.createTrackbar("Smax","HSV_calibrate", self.upper_range[1], 256,  self.HSV_slider_change)
+            cv2.createTrackbar("Smin","HSV_calibrate", self.lower_range[1], 256, self.HSV_slider_change)
+            cv2.createTrackbar("Smax","HSV_calibrate", self.upper_range[1], 256, self.HSV_slider_change)
             cv2.createTrackbar("Vmin","HSV_calibrate", self.lower_range[2], 256, self.HSV_slider_change)
             cv2.createTrackbar("Vmax","HSV_calibrate", self.upper_range[2], 256, self.HSV_slider_change)
             self.calibrating = True
