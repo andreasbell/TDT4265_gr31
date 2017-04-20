@@ -5,7 +5,7 @@ import sys
 
 class CVTracker():
     def __init__(self):
-        self.prevFrame = None
+        self.image = None
         self.lower_range = (137,5,146)
         self.upper_range = (198,74,240)
         self.absdiff_blur = 40     #Size of blurring kernel
@@ -34,11 +34,11 @@ class CVTracker():
             #cv2.drawContours(frame,contours,-1,(0,255,0),2)
 
     def AD_tracker(self, frame):
-        if type(self.prevFrame) == type(None):
-            self.prevFrame = frame
+        if type(self.image) == type(None):
+            self.image = frame
             print("test")
         gray1 = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY )
-        gray2 = cv2.cvtColor(self.prevFrame, cv2.COLOR_BGR2GRAY )
+        gray2 = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY )
 
         #Get difference of the two consecutive frames and threshold
         frame_diff = cv2.absdiff(gray2,gray1)
@@ -60,9 +60,8 @@ class CVTracker():
         cv2.imshow("blur", thresh)
         
         #Keep the previous frame for next loop.
-        self.prevFrame = frame.copy()
+        self.image = frame.copy()
         #self.thresh = thresh.copy()
-        
         
         #Find bounding box
         self.movementSearch(thresh, frame)

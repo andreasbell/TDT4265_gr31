@@ -20,7 +20,7 @@ class RPS_Game():
         self.initMainMenu()      
         # GAME Countdown variabels
         
-        self.difficultNames = ["torstein", "slickt", "slick-t", "slick t", "slick_t", "skorstein", "bart", "chilly cheese", "kjetil"]
+        self.difficultNames = ["torstein", "slickt", "slick-t", "slick t", "slick_t", "skorstein", "bart", "chilly cheese", "kjetil", "torsteink", "torsteik", "pål", "paal", "sondre", "astrit", "gardex", "astrist", "astut"]
         self.easyNames = ["frank","vipul"]
         
         self.wins = 0;
@@ -35,8 +35,10 @@ class RPS_Game():
             self.opts[0] = "HSV" 
         elif press == "Tracking":
             self.opts[0] = "Tracking" 
-        elif press == "Neural":
-            self.opts[1] = "Neural"
+        elif press == "Neural_trc":
+            self.opts[0] = "Neural_trc"            
+        elif press == "Neural_det":
+            self.opts[1] = "Neural_det"
         elif press == "Classic":
             self.opts[1] = "Classic"
         elif press == "Play":
@@ -71,12 +73,13 @@ class RPS_Game():
         self.entUsername.insert(0, "Vipul")
 
         # Create buttons
-        btn_motion   = tk.Button(text = "Motion",   command = lambda press="Motion": self.btnPress(press))
-        btn_HSV      = tk.Button(text = "HSV",      command = lambda press="HSV": self.btnPress(press))
-        btn_tracking = tk.Button(text = "Tracking", command = lambda press="Tracking": self.btnPress(press))
-        btn_neural   = tk.Button(text = "Neural",   command = lambda press="Neural": self.btnPress(press))
-        btn_classic  = tk.Button(text = "Classic",  command = lambda press="Classic": self.btnPress(press))
-        btn_play     = tk.Button(text = "Play",     command = lambda press="Play": self.btnPress(press))
+        btn_motion     = tk.Button(text = "Motion",   command = lambda press="Motion": self.btnPress(press))
+        btn_HSV        = tk.Button(text = "HSV",      command = lambda press="HSV": self.btnPress(press))
+        btn_tracking   = tk.Button(text = "Tracking", command = lambda press="Tracking": self.btnPress(press))
+        btn_neural_trc = tk.Button(text = "Neural",   command = lambda press="Neural_trc": self.btnPress(press))
+        btn_neural_det = tk.Button(text = "Neural",   command = lambda press="Neural_det": self.btnPress(press))
+        btn_classic    = tk.Button(text = "Classic",  command = lambda press="Classic": self.btnPress(press))
+        btn_play       = tk.Button(text = "Play",     command = lambda press="Play": self.btnPress(press))
 
         # Place text and buttons
         lblUsername.pack()
@@ -86,7 +89,8 @@ class RPS_Game():
         btn_motion.pack(side=tk.LEFT)
         btn_HSV.pack(side=tk.LEFT)
         btn_tracking.pack(side=tk.LEFT)
-        btn_neural.pack(side=tk.RIGHT)
+        btn_neural_trc.pack(side=tk.LEFT)        
+        btn_neural_det.pack(side=tk.RIGHT)
         btn_classic.pack(side=tk.RIGHT)
         btn_play.pack()
         
@@ -115,7 +119,7 @@ class RPS_Game():
             return (int(round(time.time() * 1000)) - self.start_time)//1000 #return seconds since start
         else:
             current_time = int(round(time.time() * 1000))
-            if current_time - self.start_time > 2000:
+            if current_time - self.start_time > 3500:
                 self.start_time = current_time #Time in ms
                 self.hand_time = current_time
                 self.hand_pos = []
@@ -173,19 +177,22 @@ class RPS_Game():
         self.losses = 0;
         self.draws = 0;
         
+        dispBox = False
         difficulty = 1
         if(self.username.lower() in self.difficultNames):
             difficulty = 2
         elif(self.username.lower() in self.easyNames):
             difficulty = 0
         
-        if(self.opts[1] == "Neural"):
+        if(self.opts[1] == "Neural_det"):
             #det = DLClassifier("weights/detector.ckpt")
             det = DLTracker(weights = 'weights/YOLO_tiny.ckpt')
         elif self.opts[1] == "Classic":
             det = CVClassifier(invert = False)
         if self.opts[0] == "Tracking":
             tracker = CVClassifier(invert = False)
+        elif self.opts[0] == "Neural_trc":
+            tracker = DLTracker(weights = 'weights/YOLO_tiny.ckpt')
         else:
             tracker = CVTracker()
 
@@ -204,11 +211,9 @@ class RPS_Game():
             elif(self.opts[0] == "HSV"):
                 tracker.HSV_tracker(frame)
                 y = tracker.y
-            elif(self.opts[0] == "Tracking"):
+            else:
                 tracker.detect_from_cvmat(frame)
                 y = tracker.y
-            else:
-                y = None
                 
             count = self.countDown(hand_position = y)
                 
@@ -243,10 +248,18 @@ class RPS_Game():
                     self.countDown(start=True)
             else:
                 #Display countdown
-                self.display(frame,count)
+                if dispBox == False:
+                    self.display(frame,count)
+                else:
+                    self.display(tracker.image, count)
             
             k = cv2.waitKey(1) & 0xFF    
             if k == 27: break
+                
+            if k == ord("b"):
+                dispBox = not dispBox
+                
+            #Calibrate motion trackers
             if k == ord("c"):
                 if self.opts[0] == "Motion":
                     tracker.AD_calibrate()
@@ -268,6 +281,12 @@ class RPS_Game():
                         k = cv2.waitKey(1) & 0xFF  
                         if k == ord("c") or k == 27: break
                     tracker.HSV_calibrate()
+                
+                if self.opts[0] == "Tracking":
+                    tracker.invert = not tracker.invert
+                
+                if self.opts[1] == "Classic":
+                    det.invert = not det.invert
 
         cap.release()
         cv2.destroyAllWindows()

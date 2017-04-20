@@ -10,7 +10,7 @@ class DLTracker :
     disp_console = True
     weights_file = None
     alpha = 0.1
-    threshold = 0.2
+    threshold = 0.12
     iou_threshold = 0.5
     num_class = 4
     num_box = 2
