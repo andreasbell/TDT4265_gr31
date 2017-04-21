@@ -106,7 +106,7 @@ class DLTracker :
         self.res = self.interpret_output(net_output[0])
         self.image = self.show_results(img,self.res)
         strtime = str(time.time()-s)
-        #if self.disp_console : print( 'Elapsed time : ' + strtime + ' secs' + '\n')
+        if self.disp_console : print( 'Elapsed time : ' + strtime + ' secs' + '\n')
         if len(self.res) == 0:
             self.result = None
             self.y = 0
